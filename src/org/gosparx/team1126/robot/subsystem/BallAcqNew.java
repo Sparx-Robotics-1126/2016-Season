@@ -32,7 +32,12 @@ public class BallAcqNew extends GenericSubsystem{
 	/**
 	 * The higher arm power
 	 */
-	private final double HIGH_ARM_POWER = .3;
+	private final double HIGH_ARM_POWER = 0.3;
+	
+	/**
+	 * the power for raising the porticullis
+	 */
+	private final double PORT_ARM_POWER = 0.6;
 
 	/**
 	 * The amount of time we want the flipper to stay up after firing (in seconds)
@@ -45,7 +50,7 @@ public class BallAcqNew extends GenericSubsystem{
 	private static final double HIGH_ROLLER_POWER = .9;
 
 	/**
-	 * The power to use when dropping the ball to a teammate blah
+	 * The power to use when dropping the ball to a teammate
 	 * The power to use when holding the arms at acquire position.
 	 */
 	private static final double HOLDING_POWER = 0.05;
@@ -85,7 +90,14 @@ public class BallAcqNew extends GenericSubsystem{
 	 */
 	private static final int RIGHT_ROLLER_PDP = 11;
 	
+	/**
+	 * the offset for the left encoder
+	 */
 	private static final int LEFT_ENC_OFFSET = 0;
+	
+	/**
+	 * the offset for the right encoder
+	 */
 	private static final int RIGHT_ENC_OFFSET = 3;
 
 	//*****************************Objects*******************
@@ -156,15 +168,23 @@ public class BallAcqNew extends GenericSubsystem{
 	private EncoderData armEncoderDataL;
 
 	/**
-	 * Magnetic sensor for the arm's home position
+	 * Magnetic sensor for the left arm's home position
 	 */
 	private MagnetSensor armHomeSwitchL;
+	
+	/**
+	 * Magnetic sensor for the right arm's home position
+	 */
 	private MagnetSensor armHomeSwitchR;
 	
 	/**
-	 * Magnetic sensor for stop pos
+	 * Magnetic sensor for the left stop position
 	 */
 	private MagnetSensor armStopSwitchL;
+	
+	/**
+	 * Magnetic sensor for the right stop position
+	 */
 	private MagnetSensor armStopSwitchR;
 
 	/**
@@ -235,11 +255,23 @@ public class BallAcqNew extends GenericSubsystem{
 	private boolean reverseRollers;
 
 	/**
-	 * Whether the arms are in their home position
+	 * Whether the left arm is in its home position
 	 */
 	private boolean armHomeL;
+	
+	/**
+	 * Whether the right arm is in its home position
+	 */
 	private boolean armHomeR;
+	
+	/**
+	 * Whether we need to set the left arm home
+	 */
 	private boolean armHomeSetL;
+	
+	/**
+	 * Whether we need to set the right arm home
+	 */
 	private boolean armHomeSetR;
 
 	/**
@@ -252,9 +284,19 @@ public class BallAcqNew extends GenericSubsystem{
 	 */
 	private double highAmp = 0;
 
+	/**
+	 * The time we started to go to the home position
+	 */
 	private double startFixHome;
+	
+	/**
+	 * Whether we have started to go to the home position
+	 */
 	private boolean fixHomeStarted;
 	
+	/**
+	 * constructs a BallAcqNew Object
+	 */
 	private BallAcqNew() {
 		super("BallAcqNew", Thread.NORM_PRIORITY);
 	}
@@ -381,7 +423,10 @@ public class BallAcqNew extends GenericSubsystem{
 				armEncoderLeft.reset();
 				armHomeSetL = true;
 			}else if(!armHomeSetL){
-				wantedArmPowerLeft = HIGH_ARM_POWER;
+				if(leftDistance > 45){
+					wantedArmPowerLeft = 0.6;
+				}else
+					wantedArmPowerLeft = HIGH_ARM_POWER;
 			}
 			if(armHomeR){
 				armMotorRight.set(0);
@@ -389,7 +434,10 @@ public class BallAcqNew extends GenericSubsystem{
 				armEncoderRight.reset();
 				armHomeSetR = true;
 			} if(!armHomeSetR){
-				wantedArmPowerRight = HIGH_ARM_POWER;
+				if(rightDistance > 45){
+					wantedArmPowerRight = 0.6;
+				}else
+					wantedArmPowerRight = HIGH_ARM_POWER;
 			}
 			if(armHomeSetL && armHomeSetR){
 				currentArmState = ArmState.STANDBY;

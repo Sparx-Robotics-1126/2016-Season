@@ -16,6 +16,27 @@ import edu.wpi.first.wpilibj.Timer;
 public class Controls extends GenericSubsystem implements JoystickListener{
 
 	/**
+	 * the input from the left joystick
+	 */
+	private double leftPower;
+
+	/**
+	 * the input from the right joystick
+	 */
+	private double rightPower;
+
+	/**
+	 * the deadband on the joystick of which we don't want it to move
+	 */
+	private static final double DEADBAND = 0.05;
+
+	/**
+	 * used to check if we want to manually control the pto
+	 */
+	private boolean manualPto = false;
+
+
+	/**
 	 * the instance of the camera controller
 	 */
 	private static CameraController camCont;
@@ -53,8 +74,8 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 	private boolean opControl;
 	private boolean opControlPrev;
 	
-	private double drawbridgeStart = Double.MAX_VALUE;
-	private static final double DRAWBRIDGE_TIME = .5;
+	private double drawbridgeStart;
+	private static final double DRAWBRIDGE_TIME = .25;
 
 	//xbox mapping
 	private static final int XBOX_A = 1;
@@ -74,6 +95,16 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 	private static final int XBOX_RIGHT_X = 4;
 	private static final int XBOX_RIGHT_Y = 5;
 	private static final int XBOX_POV = 0;
+
+	/**
+	 * The outputs for the joysticks 
+	 */
+	private static final int NEW_JOY_X_AXIS = 0;
+	private static final int NEW_JOY_Y_AXIS = 1;
+	private static final int NEW_JOY_TRIGGER = 1;//TRIGGEr
+	private static final int NEW_JOY_LEFT = 2;//LEFT
+	private static final int NEW_JOY_RIGHT = 3;//RIGHT
+	private static final int NEW_JOY_MIDDLE = 4;
 
 	private int lastPOV;
 
@@ -99,6 +130,19 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 	 */
 	@Override
 	protected boolean init() {
+		driverLeft = new AdvancedJoystick("Driver Left", IO.DRIVER_JOY_LEFT,4,DEADBAND);
+		driverLeft.addActionListener(this);
+		driverLeft.addButton(NEW_JOY_LEFT);
+		driverLeft.addButton(NEW_JOY_TRIGGER);
+		driverLeft.addButton(NEW_JOY_RIGHT);
+		driverLeft.start();
+
+		driverRight = new AdvancedJoystick("Driver Right", IO.DRIVER_JOY_RIGHT,4,DEADBAND);
+		driverRight.addActionListener(this);
+		driverRight.addButton(NEW_JOY_LEFT);
+		driverRight.addButton(NEW_JOY_TRIGGER);
+		driverRight.addButton(NEW_JOY_RIGHT);
+		driverRight.start();
 
 		opJoy = new AdvancedJoystick("Operator Joy", IO.USB_OPERATOR, 10, 0.25);
 		opJoy.addActionListener(this);
@@ -113,6 +157,9 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 		opJoy.addButton(XBOX_X);
 		opJoy.addButton(XBOX_Y);
 		opJoy.start();
+
+		leftPower = 0;
+		rightPower = 0;
 		opControl = false;
 		opControlPrev = false;
 		ds = DriverStation.getInstance();
@@ -136,7 +183,8 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 	@Override
 	protected boolean execute() {
 		if(ds.isOperatorControl()){
-			
+			leftPower = driverLeft.getAxis(NEW_JOY_Y_AXIS);
+			rightPower = driverRight.getAxis(NEW_JOY_Y_AXIS);
 			if(opJoy.getPOV(XBOX_POV) == 0 && lastPOV != 0){
 				LOG.logMessage("OP Button: Home with Rollers");
 				ballAcq.homeRollers();
@@ -152,6 +200,7 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 			}
 			
 			if(opJoy.getAxis(XBOX_R2) > .5){
+				System.out.println("we're firing!");
 				ballAcq.fire();
 			}
 			
@@ -161,7 +210,7 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 				ballAcq.setOpControl(opControl);
 			}
 			if(opControl){
-				ballAcq.setArmPower((-opJoy.getAxis(XBOX_RIGHT_Y))/3);
+				ballAcq.setArmPower(Math.pow(opJoy.getAxis(XBOX_RIGHT_Y), 3));
 			}
 			
 			if(Timer.getFPGATimestamp() > drawbridgeStart + DRAWBRIDGE_TIME){
@@ -228,6 +277,41 @@ public class Controls extends GenericSubsystem implements JoystickListener{
 				default:
 					LOG.logMessage("Bad button id" + e.getID());
 				}
+			case IO.DRIVER_JOY_LEFT:
+				switch(e.getID()){
+				case NEW_JOY_TRIGGER:
+					if(e.isRising()){
+					  //camCont.switchCamera();
+					  //System.out.println("Toggle Camera");
+						//System.out.println("Started Auto Drive");
+						//drives.driveWantedDistance(50);
+					}
+					break;
+				case NEW_JOY_LEFT:
+					if(e.isRising()){
+						//drives.startAutoDef();
+						System.out.println("Toggle Shifting");
+					}
+					break;
+				case NEW_JOY_RIGHT:
+					if(e.isRising()){
+						System.out.println("Driver wants to shift");
+					}else 
+						System.out.println(e.isRising());
+				}
+				break;
+			case IO.DRIVER_JOY_RIGHT:
+				switch(e.getID()){
+				case NEW_JOY_TRIGGER:
+					manualPto = !manualPto;
+					break;
+				case NEW_JOY_LEFT:
+					break;
+				case NEW_JOY_RIGHT:
+					//andrews method in scaling
+					break;
+				}
+				break;
 			}
 		}
 	}
